@@ -1,0 +1,16 @@
+---
+- name: Listen for events on Microsoft SCOM Alerts
+  hosts: localhost
+  sources:
+    - sandbox.ci.scom_plugin:
+        scom_server: "{{ scom_server }}"
+        username: "{{ scom_username }}"
+        password: "{{ scom_password }}"
+        criteria: "(ResolutionState = '0')"
+        interval: 10
+        ntlm_token_refresh: 30
+  rules:
+    - name: New record created
+      condition: event.sys_id is defined
+      action:
+        debug:

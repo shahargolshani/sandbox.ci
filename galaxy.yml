@@ -1,0 +1,33 @@
+---
+namespace: sandbox
+name: ci
+authors:
+  - Ansible Ecosystem Engineering team
+description: Ansible Collection Sandbox
+license_file: LICENSE
+tags: ["tools"]
+repository: https://github.com/shahargolshani/sandbox.ci.git
+documentation: https://github.com/shahargolshani/sandbox.ci.git
+homepage: https://github.com/shahargolshani/sandbox.ci.git
+issues: https://github.com/shahargolshani/sandbox.ci/issues
+readme: README.md
+version: "1.0.0"
+dependencies:
+  ansible.netcommon: ">=6.0.0"
+build_ignore:
+  # https://docs.ansible.com/ansible/devel/dev_guide/developing_collections_distributing.html#ignoring-files-and-folders
+  - codecov.yml
+  - sonar-project.properties
+  - .ansible
+  - .ansible-lint
+  - .azure-pipelines
+  - .cursor
+  - .darglint
+  - .flake8
+  - .github
+  - .gitignore
+  - .pre-commit-config.yaml
+  - .prettierignore
+  - .pytest_cache
+  - .vscode
+  - .yamllint

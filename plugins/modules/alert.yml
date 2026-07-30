@@ -1,0 +1,43 @@
+---
+# Copyright: (c) 2026, Ansible Project
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+DOCUMENTATION:
+  module: alert
+  short_description: Manage the state of a SCOM alert.
+  description:
+    - Updates the properties or resolution state of an existing SCOM alert identified by its GUID.
+    - This module is a copy from microsoft.scom used to test the CI integration target detection mechanism.
+  version_added: "1.0.0"
+  author:
+    - Shahar Golshani (@sgolshan)
+  options:
+    alert_id:
+      description: The GUID of the SCOM alert to manage.
+      type: str
+      required: true
+    resolution_state:
+      description: Desired resolution state (new or closed).
+      type: str
+      required: false
+      choices: [new, closed]
+    owner:
+      description: Username to assign as the alert owner.
+      type: str
+      required: false
+    ticket_id:
+      description: Ticket or incident reference ID.
+      type: str
+      required: false
+
+EXAMPLES: |
+  - name: Close a SCOM alert
+    sandbox.ci.alert:
+      alert_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      resolution_state: closed
+
+RETURN:
+  alert:
+    description: The SCOM alert object after applying changes.
+    returned: always
+    type: dict

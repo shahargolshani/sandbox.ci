@@ -1,0 +1,13 @@
+---
+# Dummy integration test for the win_scom_alert target.
+# This test exists purely to validate that the CI integration target detection
+# mechanism (scripts/get_integration_targets.sh) correctly selects this target
+# when alert.ps1, alert.yml, alert_info.ps1, or alert_info.yml are changed.
+
+- name: "Testing win_scom_alert"
+  ansible.builtin.debug:
+    msg: "Testing win_scom_alert"
+
+- name: "win_scom_alert | Confirm alert module is present"
+  ansible.builtin.debug:
+    msg: "Module sandbox.ci.alert and sandbox.ci.alert_info are registered for this target."

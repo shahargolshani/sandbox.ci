@@ -1,0 +1,25 @@
+---
+# Copyright: (c) 2026, Ansible Project
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+DOCUMENTATION:
+  module: dummy_alert
+  short_description: Dummy module for integration target detection testing.
+  description:
+    - This module does nothing.
+    - It exists solely to validate the CI integration target detection mechanism
+      in the sandbox.ci collection.
+  version_added: "1.0.0"
+  author:
+    - Shahar Golshani (@sgolshan)
+  options:
+    name:
+      description: Unused parameter kept for structural completeness.
+      type: str
+      required: false
+
+EXAMPLES: |
+  - name: Run dummy alert module
+    sandbox.ci.dummy_alert:
+
+RETURN: {}

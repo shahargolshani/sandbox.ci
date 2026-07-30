@@ -1,0 +1,2 @@
+# Add a new file and test multi commit PR
+# Edit file commit-2

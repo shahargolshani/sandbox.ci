@@ -1,0 +1,32 @@
+---
+# Copyright: (c) 2026, Ansible Project
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+DOCUMENTATION:
+  module: dummy_alert_info
+  short_description: Dummy info module for integration target detection testing.
+  description:
+    - This module does nothing and always returns an empty list.
+    - It exists solely to validate the CI integration target detection mechanism
+      in the sandbox.ci collection — specifically that C(dummy_alert_info) and
+      C(dummy_alert) both map to the same integration target C(win_scom_dummy_alert).
+  version_added: "1.0.0"
+  author:
+    - Shahar Golshani (@sgolshan)
+  options:
+    criteria:
+      description: Unused filter parameter kept for structural completeness.
+      type: str
+      required: false
+
+EXAMPLES: |
+  - name: Run dummy alert_info module
+    sandbox.ci.dummy_alert_info:
+    register: result
+
+RETURN:
+  alerts:
+    description: Always returns an empty list.
+    returned: always
+    type: list
+    elements: dict

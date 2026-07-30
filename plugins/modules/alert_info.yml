@@ -1,0 +1,35 @@
+---
+# Copyright: (c) 2026, Ansible Project
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+DOCUMENTATION:
+  module: alert_info
+  short_description: Retrieve SCOM alert information.
+  description:
+    - Retrieves one or more SCOM alerts, with optional filtering by criteria string.
+    - This module is a copy from microsoft.scom used to test the CI integration target detection mechanism.
+  version_added: "1.0.0"
+  author:
+    - Shahar Golshani (@sgolshan)
+  options:
+    criteria:
+      description: SCOM-style SQL-like criteria string to filter alerts.
+      type: str
+      required: false
+
+EXAMPLES: |
+  - name: Get all active SCOM alerts
+    sandbox.ci.alert_info:
+    register: alert_result
+
+  - name: Get critical alerts
+    sandbox.ci.alert_info:
+      criteria: "Severity = '2'"
+    register: critical_alerts
+
+RETURN:
+  alerts:
+    description: List of matching SCOM alert objects.
+    returned: always
+    type: list
+    elements: dict
