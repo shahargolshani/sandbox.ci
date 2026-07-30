@@ -1,0 +1,23 @@
+name: Lint extra docsite docs and links
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+jobs:
+  docsite:
+    name: Lint extra docsite docs and links
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install antsibull-docs
+        run: pip install antsibull-docs --disable-pip-version-check
+      - name: Run collection docs linter
+        run: antsibull-docs lint-collection-docs . --plugin-docs --skip-rstcheck

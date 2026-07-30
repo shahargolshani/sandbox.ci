@@ -1,0 +1,122 @@
+# .github/workflows/print-repo-vars.yml
+
+name: Print Repository & User Variables
+
+# This workflow will run on:
+# - 'push' events to any branch
+# - 'workflow_dispatch' events, allowing you to trigger it manually from the GitHub UI
+on:
+  pull_request:
+    branches:
+      - main # You can specify other branches or use '*' for all branches
+      - stable-*
+  workflow_dispatch:
+
+jobs:
+  print_variables:
+    runs-on: ubuntu-latest # Specify the runner environment
+
+    steps:
+      - name: Get User Permission
+        id: checkAccess
+        uses: actions-cool/check-user-permission@v2
+        with:
+          require: write
+          username: ${{ github.triggering_actor }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Print User Permissions false
+        if: steps.checkAccess.outputs.require-result == 'false'
+        run: |
+          echo "Does require-result match ${{ steps.checkAccess.outputs.require-result }}"
+          echo "${{ github.triggering_actor }} does not have permissions on this repo."
+          echo "Current permission level is ${{ steps.checkAccess.outputs.user-permission }}"
+          echo "Job originally triggered by ${{ github.actor }}"
+
+      - name: Print User Permissions true
+        if: steps.checkAccess.outputs.require-result == 'true'
+        run: |
+          echo "Does require-result match ${{ steps.checkAccess.outputs.require-result }}"
+          echo "${{ github.triggering_actor }} CONGRATULATIONS!!!."
+          echo "Current permission level is ${{ steps.checkAccess.outputs.user-permission }}"
+          echo "Job originally triggered by ${{ github.actor }}"
+        # echo "Does require-result match true"
+        # Does require-result match true
+        # shahargolshani CONGRATULATIONS!!!.
+        # Current permission level is admin
+        # Job originally triggered by shahargolshani
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4 # Action to checkout your repository code
+
+      - name: Print Test Variables
+        run: |
+          echo "--- Test Variables ---"
+          echo "PR Author Role: ${{ github.event.pull_request.author_association }}"
+          echo "triggering_actor: ${{ github.triggering_actor }}"
+        #       --- Test Variables ---
+        # PR author_association: OWNER
+        # triggering_actor: shahargolshani
+
+      - name: Print Repository Variables
+        run: |
+          echo "--- Repository Variables ---"
+          echo "Repository: ${{ github.repository }}"              # Full repository name (e.g., owner/repo-name)
+          echo "Repository Owner: ${{ github.repository_owner }}"   # Owner of the repository
+          echo "Ref: ${{ github.ref }}"                          # The branch or tag ref that triggered the workflow (e.g., refs/heads/main)
+          echo "SHA: ${{ github.sha }}"                          # The commit SHA that triggered the workflow
+          echo "Workspace Directory: ${{ github.workspace }}"      # The path to the GitHub workspace directory
+          echo "Action: ${{ github.action }}"                      # The name of the action currently running
+        # --- Repository Variables ---
+        # Repository: shahargolshani/intersight-ansible
+        # Repository Owner: shahargolshani
+        # Ref: refs/pull/2/merge
+        # SHA: ad0e7449a228088acc6c995fb2bcb3d6a1fe0542
+        # Workspace Directory: /home/runner/work/intersight-ansible/intersight-ansible
+        # Action: __run_4
+
+      - name: Print User/Actor Variables
+        run: |
+          echo "--- User/Actor Variables ---"
+          echo "Actor (User): ${{ github.actor }}"               # The user who triggered the workflow
+          echo "Event Name: ${{ github.event_name }}"           # The name of the webhook event that triggered the workflow
+          echo "Run ID: ${{ github.run_id }}"                   # Unique ID for the workflow run
+          echo "Run Number: ${{ github.run_number }}"           # Incremental number for workflow runs
+        #         --- User/Actor Variables ---
+        # Actor (User): shahargolshani
+        # Event Name: pull_request
+        # Run ID: 15904212092
+        # Run Number: 9
+
+      - name: Print Custom Repository Variables (if defined)
+        run: |
+          echo "--- Custom Repository Variables ---"
+          # To use custom repository variables, you need to define them in your GitHub repository settings:
+          # Go to your repository -> Settings -> Variables -> Repository -> New repository variable.
+          # Example variable name: MY_CUSTOM_VARIABLE
+          echo "Example Custom Variable (MY_CUSTOM_VARIABLE): ${{ vars.MY_CUSTOM_VARIABLE }}"
+          echo "Note: If 'MY_CUSTOM_VARIABLE' is not defined in your repository settings, this will print an empty string or error."
+        # --- Custom Repository Variables ---
+        # Example Custom Variable (MY_CUSTOM_VARIABLE):
+        # Note: If 'MY_CUSTOM_VARIABLE' is not defined in your repository settings, this will print an empty string or error.
+
+      - name: Print Common Environment Variables
+        run: |
+          echo "--- Common Environment Variables (some defined by GitHub Actions) ---"
+          echo "HOME: $HOME"
+          echo "PATH: $PATH"
+          echo "CI: $CI"                                 # Set to 'true' in CI environments
+          echo "GITHUB_ACTIONS: $GITHUB_ACTIONS"         # Set to 'true' when running in GitHub Actions
+          echo "Runner OS: ${{ runner.os }}"             # The operating system of the runner (e.g., Linux, Windows, macOS)
+          echo "Runner Arch: ${{ runner.arch }}"         # The architecture of the runner (e.g., X64)
+        # --- Common Environment Variables (some defined by GitHub Actions) ---
+        # HOME: /home/runner
+        # PATH: /snap/bin:/home/runner/.local/bin:/opt/pipx_bin:/home/runner/.cargo/bin
+        #   :/home/runner/.config/composer/vendor/bin:/usr/local/.ghcup/bin
+        #   :/home/runner/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+        #   :/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+        # CI: true
+        # GITHUB_ACTIONS: true
+        # Runner OS: Linux
+        # Runner Arch: X64

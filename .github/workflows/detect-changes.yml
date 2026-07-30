@@ -1,0 +1,158 @@
+---
+# Validates the integration target detection mechanism ported from microsoft.scom.
+#
+# The workflow mirrors the detect-changes + integration pattern used in microsoft.scom
+# but, because sandbox.ci has no Windows infrastructure, the "integration" job prints
+# the selected targets instead of running ansible-test windows-integration.
+#
+# How to trigger each detection path:
+#   1. Change alert.ps1 / alert.yml / alert_info.ps1 / alert_info.yml
+#        → only win_scom_alert runs
+#   2. Change dummy_alert.ps1/yml or dummy_alert_info.ps1/yml
+#        → only win_scom_dummy_alert runs
+#   3. Change any file under plugins/module_utils/
+#        → ALL targets run (output: "ALL")
+#   4. Change a file in tests/integration/targets/win_scom_<name>/
+#        → only win_scom_<name> runs
+#   5. Change an unrelated file (e.g. README.md)
+#        → no integration job runs (has_targets=false, job is skipped)
+
+name: "Integration Target Detection"
+
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}-detect
+  cancel-in-progress: true
+
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  detect-changes:
+    name: "Detect changed integration targets"
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.targets.outputs.targets }}
+      has_targets: ${{ steps.targets.outputs.has_targets }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run get_integration_targets.sh
+        id: targets
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # Manual run: test all targets
+            echo "targets=ALL"     >> "$GITHUB_OUTPUT"
+            echo "has_targets=true" >> "$GITHUB_OUTPUT"
+            echo "Manual dispatch — running ALL targets."
+            exit 0
+          fi
+
+          base_sha="${{ github.event.pull_request.base.sha }}"
+          head_sha="${{ github.event.pull_request.head.sha }}"
+
+          echo "=== Changed files (${base_sha}..${head_sha}) ==="
+          git diff --name-only "${base_sha}...${head_sha}" | tee /tmp/changed_files.txt
+
+          echo ""
+          echo "=== Running get_integration_targets.sh ==="
+          result=$(bash scripts/get_integration_targets.sh < /tmp/changed_files.txt)
+
+          echo "Script output: '${result}'"
+
+          if [[ -z "${result}" ]]; then
+            echo "No relevant source files changed — skipping integration job."
+            echo "targets="         >> "$GITHUB_OUTPUT"
+            echo "has_targets=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "targets=${result}"  >> "$GITHUB_OUTPUT"
+            echo "has_targets=true"   >> "$GITHUB_OUTPUT"
+          fi
+
+  integration:
+    name: "Integration test: ${{ needs.detect-changes.outputs.targets }}"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_targets == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show which targets would run
+        env:
+          TARGETS: ${{ needs.detect-changes.outputs.targets }}
+        run: |
+          echo "=================================================="
+          echo "Integration target detection result: '${TARGETS}'"
+          echo "=================================================="
+
+          if [[ "${TARGETS}" == "ALL" ]]; then
+            echo "A module_utils file changed — ALL integration targets would run:"
+            for target in tests/integration/targets/win_scom_*/; do
+              echo "  • $(basename "${target}")"
+            done
+          else
+            echo "Selected targets:"
+            for target in ${TARGETS}; do
+              echo "  • ${target}"
+            done
+          fi
+
+      - name: Run dummy integration tests
+        env:
+          TARGETS: ${{ needs.detect-changes.outputs.targets }}
+        run: |
+          if [[ "${TARGETS}" == "ALL" ]]; then
+            target_list=$(ls -d tests/integration/targets/win_scom_*/ | xargs -n1 basename)
+          else
+            target_list="${TARGETS}"
+          fi
+
+          echo ""
+          echo "=== Simulating ansible-test windows-integration ==="
+          for target in ${target_list}; do
+            if [[ -f "tests/integration/targets/${target}/tasks/main.yml" ]]; then
+              echo ""
+              echo "--- Running target: ${target} ---"
+              grep -E 'msg:' "tests/integration/targets/${target}/tasks/main.yml" \
+                | sed 's/.*msg: */  [debug] /'
+            else
+              echo "WARNING: target ${target} has no tasks/main.yml — skipped."
+            fi
+          done
+
+          echo ""
+          echo "=== All selected targets completed successfully ==="
+
+  check:
+    name: "Check"
+    if: always()
+    needs:
+      - detect-changes
+      - integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate job results
+        run: |
+          detect="${{ needs.detect-changes.result }}"
+          integration="${{ needs.integration.result }}"
+
+          echo "detect-changes: ${detect}"
+          echo "integration   : ${integration}"
+
+          if [[ "${detect}" == "failure" || "${detect}" == "cancelled" ]]; then
+            echo "detect-changes job failed."
+            exit 1
+          fi
+
+          # integration is allowed to be skipped (no relevant changes)
+          if [[ "${integration}" == "failure" || "${integration}" == "cancelled" ]]; then
+            echo "integration job failed."
+            exit 1
+          fi
+
+          echo "All checks passed."

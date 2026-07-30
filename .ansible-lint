@@ -1,0 +1,6 @@
+---
+exclude_paths:
+  - .ansible/        # local collection cache - not part of collection source
+  - .tox/
+  - .venv/
+  - tests/
