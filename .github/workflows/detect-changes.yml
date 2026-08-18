@@ -26,7 +26,16 @@ concurrency:
 on: # yamllint disable-line rule:truthy
   pull_request:
     branches: [main]
+  
   workflow_dispatch:
+    inputs:
+      targets:
+        description: >-
+          Integration test targets to run (space-separated, e.g. "win_scom_alert win_scom_alert_info").
+          Leave empty to run ALL targets.
+        required: false
+        default: ""
+
 
 jobs:
   detect-changes:
@@ -45,11 +54,11 @@ jobs:
         id: targets
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            # Manual run: test all targets
-            echo "targets=ALL"     >> "$GITHUB_OUTPUT"
-            echo "has_targets=true" >> "$GITHUB_OUTPUT"
-            echo "Manual dispatch — running ALL targets."
-            exit 0
+            # Manual trigger → use provided targets or fall back to ALL
+            if [[ -n "${{ github.event.inputs.targets }}" ]]; then
+              TARGETS="${{ github.event.inputs.targets }}"
+            else
+              TARGETS="ALL"
           fi
 
           base_sha="${{ github.event.pull_request.base.sha }}"
@@ -79,8 +88,10 @@ jobs:
     if: needs.detect-changes.outputs.has_targets == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Show which targets would run
         env:
