@@ -1,0 +1,178 @@
+---
+name: Ansible Test
+on:
+  # Sandbox uses pull_request (not pull_request_target) — no Windows self-hosted
+  # runner requiring environment gating for external forks.
+  pull_request:
+    branches: [main]
+
+  workflow_dispatch:
+    inputs:
+      targets:
+        description: >-
+          Integration test targets to run (space-separated, e.g. "win_scom_alert win_scom_alert_info").
+          Leave empty to run ALL targets.
+        required: false
+        default: ""
+
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{
+      github.event.pull_request.number || github.sha
+    }}
+  cancel-in-progress: true
+
+jobs:
+  # Determine which integration test targets need to run based on changed files.
+  # For PRs: only targets whose module/module_utils/test files changed.
+  # For pushes to main/stable-*: all win_scom_* targets (safety net).
+  detect-changes:
+    name: Detect Changed Modules
+    runs-on: ubuntu-latest
+    outputs:
+      cli_args: ${{ steps.targets.outputs.cli_args }}
+      has_targets: ${{ steps.targets.outputs.has_targets }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Determine integration test targets
+        id: targets
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # Manual trigger → use provided targets or fall back to ALL
+            if [[ -n "${{ github.event.inputs.targets }}" ]]; then
+              TARGETS="${{ github.event.inputs.targets }}"
+            else
+              TARGETS="ALL"
+            fi
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            # Push to main/stable-* → always run ALL tests as safety net
+            TARGETS="ALL"
+          else
+            # pull_request → selective based on changed files
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            # Ensure both commits are available for the diff
+            git fetch origin "${BASE_SHA}" 2>/dev/null || true
+            git fetch origin "${HEAD_SHA}" 2>/dev/null || true
+            CHANGED=$(git diff --name-only "${BASE_SHA}...${HEAD_SHA}")
+            echo "Changed files:"
+            echo "${CHANGED:-  (none)}"
+            TARGETS=$(echo "${CHANGED}" | bash scripts/get_integration_targets.sh)
+          fi
+
+          echo "Integration targets: ${TARGETS:-none}"
+
+          if [[ "${TARGETS}" == "ALL" ]]; then
+            # module_utils changed → run all tests, no target filter
+            echo "cli_args=" >> "$GITHUB_OUTPUT"
+            echo "has_targets=true" >> "$GITHUB_OUTPUT"
+          elif [[ -n "${TARGETS// /}" ]]; then
+            # Specific targets changed
+            echo "cli_args=${TARGETS}" >> "$GITHUB_OUTPUT"
+            echo "has_targets=true" >> "$GITHUB_OUTPUT"
+          else
+            # No relevant files changed → skip integration entirely
+            echo "cli_args=" >> "$GITHUB_OUTPUT"
+            echo "has_targets=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  integration:
+    runs-on: ubuntu-latest
+    needs:
+      - detect-changes
+    # Skip entirely when no relevant files changed
+    if: >-
+      always() &&
+      needs.detect-changes.outputs.has_targets == 'true'
+    name: I (Ⓐ${{ matrix.ansible }}
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - ansible: devel
+            python: 3.13
+          - ansible: stable-2.16
+            python: 3.12
+          - ansible: stable-2.17
+            python: 3.12
+          - ansible: stable-2.18
+            python: 3.12
+          - ansible: stable-2.19
+            python: 3.12
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Show which targets would run
+        env:
+          TARGETS: ${{ needs.detect-changes.outputs.cli_args }}
+        run: |
+          echo "=================================================="
+          echo "Ansible ${{ matrix.ansible }} — target detection result: '${TARGETS}'"
+          echo "=================================================="
+
+          if [[ -z "${TARGETS}" ]]; then
+            echo "A module_utils file changed — ALL integration targets would run:"
+            for target in tests/integration/targets/win_scom_*/; do
+              echo "  • $(basename "${target}")"
+            done
+          else
+            echo "Selected targets:"
+            for target in ${TARGETS}; do
+              echo "  • ${target}"
+            done
+          fi
+
+      - name: Run dummy integration tests
+        env:
+          TARGETS: ${{ needs.detect-changes.outputs.cli_args }}
+        run: |
+          if [[ -z "${TARGETS}" ]]; then
+            target_list=$(ls -d tests/integration/targets/win_scom_*/ | xargs -n1 basename)
+          else
+            target_list="${TARGETS}"
+          fi
+
+          echo ""
+          echo "=== Simulating ansible-test windows-integration ==="
+          for target in ${target_list}; do
+            if [[ -f "tests/integration/targets/${target}/tasks/main.yml" ]]; then
+              echo ""
+              echo "--- Running target: ${target} ---"
+              grep -E 'msg:' "tests/integration/targets/${target}/tasks/main.yml" \
+                | sed 's/.*msg: */  [debug] /'
+            else
+              echo "WARNING: target ${target} has no tasks/main.yml — skipped."
+            fi
+          done
+
+          echo ""
+          echo "=== All selected targets completed successfully ==="
+
+  check: # This job does nothing and is only used for the branch protection
+    # or multi-stage CI jobs, like making sure that all tests pass before
+    # a publishing job is started.
+    if: always()
+
+    needs:
+      - integration
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@release/v1
+        with:
+          # Allow integration to be skipped when no relevant files changed
+          allowed-skips: integration
+          jobs: ${{ toJSON(needs) }}

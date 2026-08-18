@@ -16,6 +16,20 @@ DOCUMENTATION:
       description: SCOM-style SQL-like criteria string to filter alerts.
       type: str
       required: false
+    severity:
+      description: Filter alerts by severity level.
+      type: str
+      required: false
+      choices: [information, warning, critical]
+    resolution_state:
+      description: Filter alerts by resolution state.
+      type: str
+      required: false
+      choices: [new, closed, any]
+    monitoring_object:
+      description: Filter alerts by monitoring object display name (substring match).
+      type: str
+      required: false
 
 EXAMPLES: |
   - name: Get all active SCOM alerts

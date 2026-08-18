@@ -29,6 +29,46 @@ DOCUMENTATION:
       description: Ticket or incident reference ID.
       type: str
       required: false
+    custom_field1:
+      description: Custom field 1 value to set on the alert.
+      type: str
+      required: false
+    custom_field2:
+      description: Custom field 2 value to set on the alert.
+      type: str
+      required: false
+    custom_field3:
+      description: Custom field 3 value to set on the alert.
+      type: str
+      required: false
+    custom_field4:
+      description: Custom field 4 value to set on the alert.
+      type: str
+      required: false
+    custom_field5:
+      description: Custom field 5 value to set on the alert.
+      type: str
+      required: false
+    custom_field6:
+      description: Custom field 6 value to set on the alert.
+      type: str
+      required: false
+    custom_field7:
+      description: Custom field 7 value to set on the alert.
+      type: str
+      required: false
+    custom_field8:
+      description: Custom field 8 value to set on the alert.
+      type: str
+      required: false
+    custom_field9:
+      description: Custom field 9 value to set on the alert.
+      type: str
+      required: false
+    custom_field10:
+      description: Custom field 10 value to set on the alert.
+      type: str
+      required: false
 
 EXAMPLES: |
   - name: Close a SCOM alert
