@@ -12,7 +12,7 @@ function Get-SandboxInfo {
     #>
     return @{
         collection = "sandbox.ci"
-        purpose    = "Integration target detection mechanism validation"
+        purpose = "Integration target detection mechanism validation"
     }
 }
 

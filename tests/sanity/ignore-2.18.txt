@@ -1,4 +1,0 @@
-plugins/modules/alert.ps1 validate-modules
-plugins/modules/alert_info.ps1 validate-modules
-plugins/modules/dummy_alert.ps1 validate-modules
-plugins/modules/dummy_alert_info.ps1 validate-modules
