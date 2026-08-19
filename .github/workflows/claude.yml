@@ -49,6 +49,8 @@ jobs:
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
+        with:
+          use_vertex: "true"
         env:
           CLAUDE_CODE_USE_VERTEX: "1"
           CLOUD_ML_REGION: "global"
@@ -66,7 +68,6 @@ jobs:
           #   --max-turns 10
           #   --allowedTools "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*)"
           #   --system-prompt "Follow our coding standards. Ensure all new code has tests. Use TypeScript for new files."
-
           # Optional: Advanced settings configuration
           # settings: |
           #   {
