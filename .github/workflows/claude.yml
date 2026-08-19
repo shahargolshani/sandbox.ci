@@ -18,6 +18,11 @@ jobs:
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
+    environment: claude-ai          # REQUIRED: configure "Required reviewers" in
+                                    # Settings → Environments → claude-ai.
+                                    # GCP_SA_KEY and ITPC_CA must be stored as
+                                    # environment secrets (not repo secrets) so
+                                    # they are only released after a reviewer approves.
     permissions:
       contents: write
       pull-requests: write
@@ -30,11 +35,18 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        env:
+          CLAUDE_CODE_USE_VERTEX: "1"
+          CLOUD_ML_REGION: "global"
+          ANTHROPIC_VERTEX_PROJECT_ID: ${{ secrets.ITPC_CA }}
 
           # Optional: Customize the trigger phrase (default: @claude)
           # trigger_phrase: "/claude"
