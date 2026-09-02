@@ -2,6 +2,7 @@
 # Copyright: (c) 2026, Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 # Test integration target detection.
+# This module does nothing, exists only to test integration target detection.
 #AnsibleRequires -CSharpUtil Ansible.Basic
 
 $spec = @{
