@@ -4,7 +4,7 @@
 
 DOCUMENTATION:
   module: alert
-  short_description: Manage the state of a SCOM alert.
+  short_description: Manage the state of a SCOM alert and check gh-pages deployment.
   description:
     - Updates the properties or resolution state of an existing SCOM alert identified by its GUID.
     - This module is a copy from microsoft.scom used to test the CI integration target detection mechanism.
