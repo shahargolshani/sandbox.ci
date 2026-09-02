@@ -1,7 +1,7 @@
 ---
 # Dummy integration test for the win_scom_alert target.
 # This test exists purely to validate that the CI integration target detection
-# mechanism (scripts/get_integration_targets.sh) correctly selects this target
+# mechanism (inlined in .github/workflows/ansible-test.yml) correctly selects this target
 # when alert.ps1, alert.yml, alert_info.ps1, or alert_info.yml are changed.
 
 - name: "Testing win_scom_alert"
